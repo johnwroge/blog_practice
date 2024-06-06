@@ -1,5 +1,7 @@
 import sqlite3
-from flask import Flask, render_template
+from flask import Flask, render_template, abort
+
+app = Flask(__name__)
 
 def get_db_connection():
     conn = sqlite3.connect('database.db')
@@ -7,16 +9,24 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-app = Flask(__name__)
+def get_post(post_id):
+    conn = get_db_connection()
+    post = conn.execute('SELECT * FROM posts WHERE id = ?', (post_id,)).fetchone()
+    conn.close()
+    conn.close()
+    if post is None:
+        abort(404)
+    return post
 
-
-# @app.route('/')
-# def home():
-#     return render_template('base.html')
-
-# @app.route('/index')
-# def index():
-#     return render_template('index.html')
+@app.route('/<int:post_id>')
+def post(post_id):
+    # we got the post the user clicked on through the function we wrote before,
+    # we save the value of the post in post variable
+    post = get_post(post_id)
+    # we render the post page, pass the post variable as an argument,
+    #why? to be able to use it in the html page
+    return render_template('post.html', post=post)
+    
 
 @app.route('/')
 def index():
@@ -24,10 +34,6 @@ def index():
     posts = conn.execute('SELECT * FROM posts').fetchall()
     conn.close()
     return render_template('index.html', posts=posts)
-
-@app.route("/post")
-def posts():
-    return "<p>This is a post</p>"
 
 @app.route("/hello")
 def hello_world():
